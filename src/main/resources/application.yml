@@ -17,6 +17,18 @@ spring:
   web:
     resources:
       static-locations: file:${user.dir}/src/main/resources/static/
-#??????
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 2912528586@qq.com
+    password: zjaxvmblvcuedhag
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+    protocol: smtp
+
 uploadFilePath:
   doctorPicturesPath: ${user.dir}/src/main/resources/static/doctorPictures

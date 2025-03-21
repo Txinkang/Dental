@@ -17,6 +17,12 @@ public class User {
     @Column(name = "user_password")
     private String userPassword;
     @Basic
+    @Column(name = "user_name")
+    private String userName;
+    @Basic
+    @Column(name = "user_email")
+    private String userEmail;
+    @Basic
     @Column(name = "created_at")
     private Timestamp createdAt;
     @Basic
@@ -47,6 +53,22 @@ public class User {
         this.userPassword = userPassword;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
@@ -68,11 +90,11 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(userId, user.userId) && Objects.equals(userAccount, user.userAccount) && Objects.equals(userPassword, user.userPassword) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
+        return Objects.equals(userId, user.userId) && Objects.equals(userAccount, user.userAccount) && Objects.equals(userPassword, user.userPassword) && Objects.equals(userName, user.userName) && Objects.equals(userEmail, user.userEmail) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, userAccount, userPassword, createdAt, updatedAt);
+        return Objects.hash(userId, userAccount, userPassword, userName, userEmail, createdAt, updatedAt);
     }
 }

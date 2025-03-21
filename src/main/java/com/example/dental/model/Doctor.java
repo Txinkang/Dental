@@ -21,7 +21,7 @@ public class Doctor {
     private String introduction;
     @Basic
     @Column(name = "working_years")
-    private String workingYears;
+    private Integer workingYears;
     @Basic
     @Column(name = "create_time")
     private Timestamp createTime;
@@ -61,11 +61,11 @@ public class Doctor {
         this.introduction = introduction;
     }
 
-    public String getWorkingYears() {
+    public Integer getWorkingYears() {
         return workingYears;
     }
 
-    public void setWorkingYears(String workingYears) {
+    public void setWorkingYears(Integer workingYears) {
         this.workingYears = workingYears;
     }
 

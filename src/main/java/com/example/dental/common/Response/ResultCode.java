@@ -29,6 +29,8 @@ public enum ResultCode {
     R_FileNotFound(413,"文件不存在"),
     R_FileNameExists(414,"文件名已存在"),
     R_BalanceNotEnough(415,"余额不足"),
+    R_UserNameIsExist(416,"用户名已存在"),
+    R_UserEmailIsExist(417,"邮箱已存在"),
     //-----------------------系统相关错误 401-500---------------------
     R_SaveFileError(503,"文件保存异常"),
     R_DeleteFileError(504,"文件删除异常"), 

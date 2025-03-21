@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.dental.common.Response.Result;
+import com.example.dental.model.Appointment;
+import com.example.dental.model.Consultation;
 import com.example.dental.model.User;
 import com.example.dental.service.user.UserService;
 @RestController
@@ -23,6 +25,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    //=========================================用户管理=========================================
     @PostMapping(value = "/register")
     public Result register(@RequestBody User user){
         return userService.register(user);
@@ -46,6 +49,45 @@ public class UserController {
     @PatchMapping("/updateUserInfo")
     public Result updateUserInfo(@RequestBody @Validated User user){
         return userService.updateUserInfo(user);
+    }
+
+    //=========================================项目管理=========================================
+    @GetMapping("/getItem")
+    public Result getItem(){
+        return userService.getItem();
+    }
+
+    @PostMapping("/appointentItem")
+    public Result appointentItem(@RequestBody Appointment appointment){
+        return userService.appointentItem(appointment);
+    }
+
+    @GetMapping("/getAppointment")
+    public Result getAppointment(){
+        return userService.getAppointment();
+    }
+
+
+    //=========================================科普管理=========================================
+    @GetMapping("/getEducation")
+    public Result getEducation(){
+        return userService.getEducation();
+    }
+
+    @GetMapping("/getDoctorInfo")
+    public Result getDoctorInfo(){
+        return userService.getDoctorInfo();
+    }
+
+    //=========================================咨询管理=========================================
+    @PostMapping("/consult")
+    public Result consult(@RequestBody Consultation consultation){
+        return userService.consult(consultation);
+    }
+
+    @GetMapping("/getConsultaion")
+    public Result getConsultaion(){
+        return userService.getConsultaion();
     }
 
 }

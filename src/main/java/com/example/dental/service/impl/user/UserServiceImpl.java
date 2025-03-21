@@ -4,17 +4,31 @@ import com.example.dental.common.Redis.RedisService;
 import com.example.dental.common.Response.Result;
 import com.example.dental.common.Response.ResultCode;
 import com.example.dental.common.userCommon.ThreadLocalUtil;
+import com.example.dental.constant.AppointmentConstantdata;
 import com.example.dental.constant.MagicMathConstData;
 import com.example.dental.constant.RedisConstData;
+import com.example.dental.model.Appointment;
+import com.example.dental.model.Consultation;
+import com.example.dental.model.Doctor;
+import com.example.dental.model.Education;
+import com.example.dental.model.Item;
 import com.example.dental.model.User;
+import com.example.dental.repository.AppointmentRepository;
+import com.example.dental.repository.ConsultationRepository;
+import com.example.dental.repository.DoctorRepository;
+import com.example.dental.repository.EducationRepository;
+import com.example.dental.repository.ItemRepository;
 import com.example.dental.repository.UserRepository;
 import com.example.dental.service.user.UserService;
 import com.example.dental.utils.JwtUtil;
 import com.example.dental.utils.LogUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +48,22 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private ItemRepository itemRepository;
+    
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private EducationRepository educationRepository;
+
+    @Autowired
+    private ConsultationRepository consultationRepository;
+
+    //=========================================用户管理=========================================
     @Override
     public Result register(User user) {
         try {
@@ -45,7 +75,13 @@ public class UserServiceImpl implements UserService {
             if (userRepository.findByUserAccount(user.getUserAccount()) != null) {
                 return new Result(ResultCode.R_UserAccountIsExist);
             }
-            //设置用户ID和初始余额
+            if (userRepository.findByUserEmail(user.getUserEmail()) != null) {
+                return new Result(ResultCode.R_UserEmailIsExist);
+            }
+            if (userRepository.findByUserName(user.getUserName()) != null) {
+                return new Result(ResultCode.R_UserNameIsExist);
+            }
+            //设置用户ID
             user.setUserId(UUID.randomUUID().toString());
             //设置创建时间和更新时间
             Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -127,7 +163,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-
     @Override
     public Result updateUserInfo(User user) {
         try {
@@ -148,6 +183,20 @@ public class UserServiceImpl implements UserService {
                 }
                 queryUser.setUserAccount(user.getUserAccount());
             }
+            if (!Strings.isEmpty(user.getUserEmail())) {
+                User queryUserEmail = userRepository.findByUserEmail(user.getUserEmail());
+                if (queryUserEmail != null && !queryUserEmail.getUserId().equals(userId)) {
+                    return new Result(ResultCode.R_UserEmailIsExist);
+                }
+                queryUser.setUserEmail(user.getUserEmail());
+            }
+            if (!Strings.isEmpty(user.getUserName())) {
+                User queryUserName = userRepository.findByUserName(user.getUserName());
+                if (queryUserName != null && !queryUserName.getUserId().equals(userId)) {
+                    return new Result(ResultCode.R_UserNameIsExist);
+                }
+                queryUser.setUserName(user.getUserName());
+            }
             if (!Strings.isEmpty(user.getUserPassword())) {
                 queryUser.setUserPassword(user.getUserPassword());
             }
@@ -162,25 +211,155 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    //=========================================项目管理=========================================
     @Override
-    public Result recharge(BigDecimal amount) {
+    public Result getItem() {
         try {
-            BigDecimal decimalAmount = new BigDecimal(String.valueOf(amount));
-            if (decimalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                return new Result(ResultCode.R_ParamError);
+            List<Item> itemList = itemRepository.findAll();
+            List<Map<String, Object>> itemWithDoctors = new ArrayList<>();
+            
+            for (Item o : itemList) {
+                Map<String, Object> itemMap = new HashMap<>();
+                itemMap.put("itemId", o.getItemId());
+                itemMap.put("itemName", o.getItemName());
+                itemMap.put("createTime", o.getCreateTime());
+                itemMap.put("updateTime", o.getUpdateTime());
+                String doctorIdsJson = (String) o.getDoctorId();
+                List<Map<String, Object>> doctorList = new ArrayList<>();
+                if (!Strings.isEmpty(doctorIdsJson)) {
+                    String[] doctorIdsArray = new ObjectMapper().readValue(doctorIdsJson, String[].class);
+                    for(String doctorId : doctorIdsArray){
+                        Doctor d = doctorRepository.findByDoctorId(doctorId);
+                        if (d != null) {
+                            Map<String, Object> doctorMap = new HashMap<>();
+                            doctorMap.put("doctorId", d.getDoctorId());
+                            doctorMap.put("doctorName", d.getDoctorName());
+                            doctorList.add(doctorMap);
+                        } else {
+                            Map<String, Object> doctorMap = new HashMap<>();
+                            doctorMap.put("doctorId", "");
+                            doctorMap.put("doctorName", "");
+                            doctorList.add(doctorMap);
+                        }
+                    }
+                }
+                itemMap.put("doctor", doctorList);
+                itemWithDoctors.add(itemMap);
             }
-            String userId = ThreadLocalUtil.getUserId();
-            if (userId == null) {
-                return new Result(ResultCode.R_Error);
-            }
-            User queryUser = userRepository.findByUserId(userId);
-            if (queryUser == null) {
-                return new Result(ResultCode.R_UserNotFound);
-            }
-            userRepository.saveAndFlush(queryUser);
+            return new Result(ResultCode.R_Ok, itemWithDoctors);
+        } catch (Exception e) {
+            logUtil.error("获取项目失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    @Override
+    public Result appointentItem(Appointment appointment) {
+        try {
+            Appointment newAppointment = new Appointment();
+            newAppointment.setAppointmentId(UUID.randomUUID().toString());
+            newAppointment.setUserId(ThreadLocalUtil.getUserId());
+            newAppointment.setItemId(appointment.getItemId());
+            newAppointment.setDoctorId(appointment.getDoctorId());
+            // 将秒级时间戳转换为毫秒级
+            long appointmentTimeMillis = appointment.getAppointmentTime().getTime() * 1000;
+            newAppointment.setAppointmentTime(new Timestamp(appointmentTimeMillis));
+            newAppointment.setResult("");
+            newAppointment.setStatus(AppointmentConstantdata.APPOINTMENT_STATUS_NOUPLOAD);
+            newAppointment.setCreateTime(new Timestamp(System.currentTimeMillis()));
+            newAppointment.setUpdateTime(new Timestamp(System.currentTimeMillis()));
+            appointmentRepository.save(newAppointment);
             return new Result(ResultCode.R_Ok);
         } catch (Exception e) {
-            logUtil.error("充值失败", e);
+            logUtil.error("预约项目失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    @Override
+    public Result getAppointment() {
+        try {
+            String userId = ThreadLocalUtil.getUserId();
+            if (userId == null) {
+                return new Result(ResultCode.R_Fail);
+            }
+            List<Appointment> appointmentList = appointmentRepository.findByUserId(userId);
+            List<Map<String, Object>> appointmentWithItems = new ArrayList<>();
+            for (Appointment o : appointmentList) {
+                Map<String, Object> appointmentMap = new HashMap<>();
+                appointmentMap.put("appointmentId", o.getAppointmentId());
+                appointmentMap.put("appointmentTime", o.getAppointmentTime());
+                appointmentMap.put("status", o.getStatus());
+                appointmentMap.put("result", o.getResult());
+                appointmentMap.put("createTime", o.getCreateTime());
+                appointmentMap.put("updateTime", o.getUpdateTime());
+                Doctor queryDoctor = doctorRepository.findByDoctorId(o.getDoctorId());
+                appointmentMap.put("doctor_name", queryDoctor.getDoctorName());
+                User queryUser = userRepository.findByUserId(o.getUserId());
+                appointmentMap.put("user_name", queryUser.getUserName());
+                Item queryItem = itemRepository.findByItemId(o.getItemId());
+                appointmentMap.put("item_name", queryItem.getItemName());
+                appointmentWithItems.add(appointmentMap);
+            }
+            return new Result(ResultCode.R_Ok, appointmentWithItems);
+        } catch (Exception e) {
+            logUtil.error("获取预约项目失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    //=========================================科普管理=========================================
+    @Override
+    public Result getEducation() {
+        try {
+            List<Education> educationList = educationRepository.findAll();
+            return new Result(ResultCode.R_Ok, educationList);
+        } catch (Exception e) {
+            logUtil.error("获取科普失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    @Override
+    public Result getDoctorInfo() {
+        try {
+            List<Doctor> doctorList = doctorRepository.findAll();
+            return new Result(ResultCode.R_Ok, doctorList);
+        } catch (Exception e) {
+            logUtil.error("获取医生信息失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+
+    //=========================================咨询管理=========================================
+    @Override
+    public Result consult(Consultation consultation) {
+        try {
+            consultation.setConsultationId(UUID.randomUUID().toString());
+            consultation.setUserId(ThreadLocalUtil.getUserId());
+            consultation.setAnswer("");
+            consultation.setCreateTime(new Timestamp(System.currentTimeMillis()));
+            consultation.setUpdateTime(new Timestamp(System.currentTimeMillis()));
+            consultationRepository.save(consultation);
+            return new Result(ResultCode.R_Ok);
+        } catch (Exception e) {
+            logUtil.error("咨询失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    @Override
+    public Result getConsultaion() {
+        try {
+            String userId = ThreadLocalUtil.getUserId();
+            if (userId == null) {
+                return new Result(ResultCode.R_Fail);
+            }
+            List<Consultation> consultationList = consultationRepository.findByUserId(userId);
+            return new Result(ResultCode.R_Ok, consultationList);
+        } catch (Exception e) {
+            logUtil.error("获取咨询失败", e);
             return new Result(ResultCode.R_UpdateDbFailed);
         }
     }
