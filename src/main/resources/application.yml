@@ -29,6 +29,9 @@ spring:
           ssl:
             enable: true
     protocol: smtp
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
 
 uploadFilePath:
   doctorPicturesPath: ${user.dir}/src/main/resources/static/doctorPictures

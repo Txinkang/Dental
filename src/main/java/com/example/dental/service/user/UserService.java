@@ -33,4 +33,6 @@ public interface UserService {
 
     Result getConsultaion();
 
+    Result cancelAppointment(String appointmentId);
+
 }

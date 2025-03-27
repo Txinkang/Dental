@@ -27,4 +27,9 @@ public class AdminController {
     public Result logout(@RequestHeader("Authorization") String token){
         return adminService.logout(token);
     }
+
+    @GetMapping("/getAdminInfo")
+    public Result getAdminInfo(){
+        return adminService.getAdminInfo();
+    }
 }

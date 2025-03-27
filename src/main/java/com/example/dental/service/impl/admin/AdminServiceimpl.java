@@ -12,6 +12,7 @@ import com.example.dental.utils.JwtUtil;
 import com.example.dental.utils.LogUtil;
 import com.example.dental.common.Response.Result;
 import com.example.dental.common.Response.ResultCode;
+import com.example.dental.common.userCommon.ThreadLocalUtil;
 import com.example.dental.constant.MagicMathConstData;
 import com.example.dental.constant.RedisConstData;
 import com.example.dental.model.Admin;
@@ -76,6 +77,24 @@ public class AdminServiceimpl implements AdminService{
         } catch (Exception e) {
             logUtil.error("登出失败", e);
             return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
+
+    @Override
+    public Result getAdminInfo() {
+        try {
+            String adminId = ThreadLocalUtil.getUserId();
+            if(adminId == null){
+                return new Result(ResultCode.R_Error);
+            }
+            Admin admin = adminRepository.findByAdminId(adminId);
+            if(admin == null){
+                return new Result(ResultCode.R_Error);
+            }
+            return new Result(ResultCode.R_Ok, admin);
+        } catch (Exception e) {
+            logUtil.error("获取管理员信息失败", e);
+            return new Result(ResultCode.R_Error);
         }
     }
 

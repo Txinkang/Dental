@@ -8,5 +8,7 @@ public interface AdminService {
     Result login(Admin admin);
 
     Result logout(String token);
+
+    Result getAdminInfo();
     
 }

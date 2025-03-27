@@ -165,6 +165,26 @@ public class ManageServiceImpl implements ManageService {
                 FileUtil.deleteFile(doctor.getDoctorAvatar(), doctorPicturesPath);
             }
             doctorRepository.delete(doctor);
+            //把item中的doctorjson数组里的对应doctor也删掉
+            List<Item> items = itemRepository.findAll();
+            for(Item item : items) {
+                String doctorIdsJson = (String) item.getDoctorId();
+                if(doctorIdsJson != null && !doctorIdsJson.isEmpty()) {
+                    try {
+                        String[] doctorIds = new ObjectMapper().readValue(doctorIdsJson, String[].class);
+                        List<String> doctorIdList = new ArrayList<>(Arrays.asList(doctorIds));
+                        doctorIdList.remove(doctorId);
+                        if(doctorIdList.isEmpty()) {
+                            item.setDoctorId(null);
+                        } else {
+                            item.setDoctorId(new ObjectMapper().writeValueAsString(doctorIdList.toArray(new String[0])));
+                        }
+                        itemRepository.save(item);
+                    } catch(Exception ex) {
+                        logUtil.error("从项目中移除医生失败", ex);
+                    }
+                }
+            }
             return new Result(ResultCode.R_Ok, "删除医生成功");
         }catch(Exception e){
             logUtil.error("删除医生失败", e);
@@ -226,7 +246,7 @@ public class ManageServiceImpl implements ManageService {
                 itemMap.put("doctor", doctorList);
                 itemWithDoctors.add(itemMap);
             }
-            pageResponse.setTotal_item(items.size());
+            pageResponse.setTotal_item(page.getTotalElements());
             pageResponse.setData(itemWithDoctors);
             return new Result(ResultCode.R_Ok, pageResponse);
         }catch(Exception e){
@@ -469,14 +489,26 @@ public class ManageServiceImpl implements ManageService {
                 appointmentMap.put("createTime", o.getCreateTime());
                 appointmentMap.put("updateTime", o.getUpdateTime());
                 Doctor queryDoctor = doctorRepository.findByDoctorId(o.getDoctorId());
-                appointmentMap.put("doctor_name", queryDoctor.getDoctorName());
+                if(queryDoctor != null){
+                    appointmentMap.put("doctor_name", queryDoctor.getDoctorName());
+                }else{
+                    appointmentMap.put("doctor_name", "已删除");
+                }
                 User queryUser = userRepository.findByUserId(o.getUserId());
-                appointmentMap.put("user_name", queryUser.getUserName());
+                if(queryUser != null){
+                    appointmentMap.put("user_name", queryUser.getUserName());
+                }else{
+                    appointmentMap.put("user_name", "已删除");
+                }
                 Item queryItem = itemRepository.findByItemId(o.getItemId());
-                appointmentMap.put("item_name", queryItem.getItemName());
+                if(queryItem != null){
+                    appointmentMap.put("item_name", queryItem.getItemName());
+                }else{
+                    appointmentMap.put("item_name", "已删除");
+                }
                 appointmentWithItems.add(appointmentMap);
             }
-            pageResponse.setTotal_item(appointments.size());
+            pageResponse.setTotal_item(page.getTotalElements());
             pageResponse.setData(appointmentWithItems);
             return new Result(ResultCode.R_Ok, pageResponse);
         }catch(Exception e){

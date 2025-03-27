@@ -39,7 +39,7 @@ public class ManageController {
         return manageService.getDoctor(doctorName, pageNum, pageSize);
     }
 
-    @PatchMapping("/updateDoctor")
+    @PostMapping("/updateDoctor")
     public Result updateDoctor(
         @RequestParam(value = "doctor_id", required = true) String doctorId,
         @RequestParam(value = "doctor_name", required = false) String doctorName,
@@ -75,8 +75,8 @@ public class ManageController {
 
     @PostMapping("/addItem")
     public Result addItem(
-        @RequestParam(value = "item_name", required = false) String itemName,
-        @RequestParam(value = "doctor_id", required = false) String doctorId
+        @RequestParam(value = "item_name", required = true) String itemName,
+        @RequestParam(value = "doctor_id", required = true) String doctorId
     ){
         return manageService.addItem(itemName, doctorId);
     }

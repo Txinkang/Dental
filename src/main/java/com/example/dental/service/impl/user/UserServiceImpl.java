@@ -294,11 +294,23 @@ public class UserServiceImpl implements UserService {
                 appointmentMap.put("createTime", o.getCreateTime());
                 appointmentMap.put("updateTime", o.getUpdateTime());
                 Doctor queryDoctor = doctorRepository.findByDoctorId(o.getDoctorId());
-                appointmentMap.put("doctor_name", queryDoctor.getDoctorName());
+                if(queryDoctor != null){
+                    appointmentMap.put("doctor_name", queryDoctor.getDoctorName());
+                }else{
+                    appointmentMap.put("doctor_name", "已删除");
+                }
                 User queryUser = userRepository.findByUserId(o.getUserId());
-                appointmentMap.put("user_name", queryUser.getUserName());
+                if(queryUser != null){
+                    appointmentMap.put("user_name", queryUser.getUserName());
+                }else{
+                    appointmentMap.put("user_name", "已删除");
+                }
                 Item queryItem = itemRepository.findByItemId(o.getItemId());
-                appointmentMap.put("item_name", queryItem.getItemName());
+                if(queryItem != null){
+                    appointmentMap.put("item_name", queryItem.getItemName());
+                }else{
+                    appointmentMap.put("item_name", "已删除");
+                }
                 appointmentWithItems.add(appointmentMap);
             }
             return new Result(ResultCode.R_Ok, appointmentWithItems);
@@ -308,6 +320,25 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public Result cancelAppointment(String appointmentId) {
+        try {
+            Appointment appointment = appointmentRepository.findByAppointmentId(appointmentId);
+            if(appointment == null){
+                return new Result(ResultCode.R_Error);
+            }
+            //判断距离预约开始时间如果小于15分钟，则不允许取消
+            if(appointment.getAppointmentTime().getTime() - System.currentTimeMillis() < 15 * 60 * 1000){
+                return new Result(ResultCode.R_Error);
+            }
+            //取消预约
+            appointmentRepository.delete(appointment);
+            return new Result(ResultCode.R_Ok);
+        } catch (Exception e) {
+            logUtil.error("取消预约项目失败", e);
+            return new Result(ResultCode.R_UpdateDbFailed);
+        }
+    }
     //=========================================科普管理=========================================
     @Override
     public Result getEducation() {

@@ -67,6 +67,12 @@ public class UserController {
         return userService.getAppointment();
     }
 
+    @GetMapping("/cancelAppointment")  
+    public Result cancelAppointment(
+        @RequestParam("appointmentId") String appointmentId
+    ){
+        return userService.cancelAppointment(appointmentId);
+    }
 
     //=========================================科普管理=========================================
     @GetMapping("/getEducation")
