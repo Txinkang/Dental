@@ -35,3 +35,5 @@ spring:
 
 uploadFilePath:
   doctorPicturesPath: ${user.dir}/src/main/resources/static/doctorPictures
+server:
+  port: 8888

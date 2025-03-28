@@ -261,9 +261,7 @@ public class UserServiceImpl implements UserService {
             newAppointment.setUserId(ThreadLocalUtil.getUserId());
             newAppointment.setItemId(appointment.getItemId());
             newAppointment.setDoctorId(appointment.getDoctorId());
-            // 将秒级时间戳转换为毫秒级
-            long appointmentTimeMillis = appointment.getAppointmentTime().getTime() * 1000;
-            newAppointment.setAppointmentTime(new Timestamp(appointmentTimeMillis));
+            newAppointment.setAppointmentTime(appointment.getAppointmentTime());
             newAppointment.setResult("");
             newAppointment.setStatus(AppointmentConstantdata.APPOINTMENT_STATUS_NOUPLOAD);
             newAppointment.setCreateTime(new Timestamp(System.currentTimeMillis()));
@@ -311,7 +309,8 @@ public class UserServiceImpl implements UserService {
                 }else{
                     appointmentMap.put("item_name", "已删除");
                 }
-                appointmentWithItems.add(appointmentMap);
+                //每条数据插入到数组的最开头
+                appointmentWithItems.add(0, appointmentMap);
             }
             return new Result(ResultCode.R_Ok, appointmentWithItems);
         } catch (Exception e) {
