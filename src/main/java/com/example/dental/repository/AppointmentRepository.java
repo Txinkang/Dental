@@ -30,5 +30,26 @@ public interface AppointmentRepository extends JpaRepository<Appointment, String
     Appointment findByAppointmentId(String appointmentId);
 
     List<Appointment> findByAppointmentTimeBetween(Timestamp start, Timestamp end);
+
+    List<Appointment> findByUserIdOrderByAppointmentTimeDesc(String userId);
+
+    Page<Appointment> findByItemIdAndDoctorIdAndUserIdOrderByAppointmentTimeDesc(String itemId, String doctorId,
+            String userId, Pageable pageable);
+
+    Page<Appointment> findByItemIdAndDoctorIdOrderByAppointmentTimeDesc(String itemId, String doctorId,
+            Pageable pageable);
+
+    Page<Appointment> findByItemIdAndUserIdOrderByAppointmentTimeDesc(String itemId, String userId, Pageable pageable);
+
+    Page<Appointment> findByDoctorIdAndUserIdOrderByAppointmentTimeDesc(String doctorId, String userId,
+            Pageable pageable);
+
+    Page<Appointment> findByItemIdOrderByAppointmentTimeDesc(String itemId, Pageable pageable);
+
+    Page<Appointment> findByDoctorIdOrderByAppointmentTimeDesc(String doctorId, Pageable pageable);
+
+    Page<Appointment> findByUserIdOrderByAppointmentTimeDesc(String userId, Pageable pageable);
+
+    Page<Appointment> findAllByOrderByAppointmentTimeDesc(Pageable pageable);
     
 }

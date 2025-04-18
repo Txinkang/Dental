@@ -147,6 +147,11 @@ public class ManageController {
         return manageService.uploadResult(appointment);
     }
 
+    @PatchMapping("/breachAppointment")
+    public Result breachAppointment(@RequestBody Appointment appointment){
+        return manageService.breachAppointment(appointment);
+    }
+
     //==================================咨询管理==================================
     @GetMapping("/getConsultation")
     public Result getConsultation(){

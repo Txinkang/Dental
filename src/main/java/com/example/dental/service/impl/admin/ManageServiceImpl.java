@@ -462,21 +462,21 @@ public class ManageServiceImpl implements ManageService {
                 }
             }
             if(item != null && doctor != null && user != null){
-                page = appointmentRepository.findByItemIdAndDoctorIdAndUserId(item.getItemId(), doctor.getDoctorId(), user.getUserId(), pageable);
+                page = appointmentRepository.findByItemIdAndDoctorIdAndUserIdOrderByAppointmentTimeDesc(item.getItemId(), doctor.getDoctorId(), user.getUserId(), pageable);
             }else if(item != null && doctor != null){
-                page = appointmentRepository.findByItemIdAndDoctorId(item.getItemId(), doctor.getDoctorId(), pageable);
+                page = appointmentRepository.findByItemIdAndDoctorIdOrderByAppointmentTimeDesc(item.getItemId(), doctor.getDoctorId(), pageable);
             }else if(item != null && user != null){
-                page = appointmentRepository.findByItemIdAndUserId(item.getItemId(), user.getUserId(), pageable);
+                page = appointmentRepository.findByItemIdAndUserIdOrderByAppointmentTimeDesc(item.getItemId(), user.getUserId(), pageable);
             }else if(doctor != null && user != null){
-                page = appointmentRepository.findByDoctorIdAndUserId(doctor.getDoctorId(), user.getUserId(), pageable);
+                page = appointmentRepository.findByDoctorIdAndUserIdOrderByAppointmentTimeDesc(doctor.getDoctorId(), user.getUserId(), pageable);
             }else if(item != null){
-                page = appointmentRepository.findByItemId(item.getItemId(), pageable);
+                page = appointmentRepository.findByItemIdOrderByAppointmentTimeDesc(item.getItemId(), pageable);
             }else if(doctor != null){
-                page = appointmentRepository.findByDoctorId(doctor.getDoctorId(), pageable);
+                page = appointmentRepository.findByDoctorIdOrderByAppointmentTimeDesc(doctor.getDoctorId(), pageable);
             }else if(user != null){
-                page = appointmentRepository.findByUserId(user.getUserId(), pageable);
+                page = appointmentRepository.findByUserIdOrderByAppointmentTimeDesc(user.getUserId(), pageable);
             }else{
-                page = appointmentRepository.findAll(pageable);
+                page = appointmentRepository.findAllByOrderByAppointmentTimeDesc(pageable);
             }
             List<Appointment> appointments = page.getContent();
             List<Map<String, Object>> appointmentWithItems = new ArrayList<>();
@@ -534,7 +534,28 @@ public class ManageServiceImpl implements ManageService {
             return new Result(ResultCode.R_Error, "上传结果失败");
         }
     }
-    
+
+    @Override
+    public Result breachAppointment(Appointment appointment) {
+        try{
+            Appointment queryAppointment = appointmentRepository.findByAppointmentId(appointment.getAppointmentId());
+            if(queryAppointment == null){
+                return new Result(ResultCode.R_Error, "预约不存在");
+            }
+            queryAppointment.setStatus(AppointmentConstantdata.APPOINTMENT_STATUS_BREACH);
+            queryAppointment.setUpdateTime(new Timestamp(System.currentTimeMillis()));
+            appointmentRepository.save(queryAppointment);
+            User queryUser = userRepository.findByUserId(queryAppointment.getUserId());
+            if(queryUser != null){
+                queryUser.setUserBreach(queryUser.getUserBreach() + 1);
+                userRepository.save(queryUser);
+            }
+            return new Result(ResultCode.R_Ok);
+        }catch(Exception e){
+            logUtil.error("设置违约失败", e);
+            return new Result(ResultCode.R_Error, "设置违约失败");
+        }
+    }
     //==================================咨询管理==================================
     @Override
     public Result getConsultation() {

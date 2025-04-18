@@ -23,6 +23,9 @@ public class User {
     @Column(name = "user_email")
     private String userEmail;
     @Basic
+    @Column(name = "user_breach")
+    private Integer userBreach;
+    @Basic
     @Column(name = "created_at")
     private Timestamp createdAt;
     @Basic
@@ -67,6 +70,14 @@ public class User {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public Integer getUserBreach() {
+        return userBreach;
+    }
+
+    public void setUserBreach(Integer userBreach) {
+        this.userBreach = userBreach;
     }
 
     public Timestamp getCreatedAt() {

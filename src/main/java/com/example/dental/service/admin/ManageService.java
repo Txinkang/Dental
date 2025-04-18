@@ -44,4 +44,6 @@ public interface ManageService {
     Result getConsultation();
 
     Result reply(Consultation consultation);
+
+    Result breachAppointment(Appointment appointment);
 }

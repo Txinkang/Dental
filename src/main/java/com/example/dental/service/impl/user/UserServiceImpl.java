@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -83,6 +85,7 @@ public class UserServiceImpl implements UserService {
             }
             //设置用户ID
             user.setUserId(UUID.randomUUID().toString());
+            user.setUserBreach(0);
             //设置创建时间和更新时间
             Timestamp now = new Timestamp(System.currentTimeMillis());
             user.setCreatedAt(now);
@@ -244,6 +247,42 @@ public class UserServiceImpl implements UserService {
                     }
                 }
                 itemMap.put("doctor", doctorList);
+                // 获取当前时间
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime today1745 = now.withHour(17).withMinute(45).withSecond(0).withNano(0);
+
+                // 确定是使用今天还是明天的日期
+                LocalDateTime targetDate;
+                if (now.isAfter(today1745)) {
+                    // 如果当前时间已经超过了今天的17:45，则使用明天的日期
+                    targetDate = now.plusDays(1);
+                } else {
+                    // 否则使用今天的日期
+                    targetDate = now;
+                }
+
+                // 设置目标日期的起始和结束时间
+                LocalDateTime start = targetDate.withHour(8).withMinute(0).withSecond(0).withNano(0);
+                LocalDateTime end = targetDate.withHour(17).withMinute(45).withSecond(0).withNano(0);
+
+                // 生成8:00到17:45之间每15分钟的时间戳
+                List<Integer> appointmentTime = new ArrayList<>();
+                while (!start.isAfter(end)) {
+                    // 转换为秒级时间戳
+                    long timestampInSeconds = start.atZone(ZoneId.systemDefault()).toEpochSecond();
+                    
+                    // 检查Redis中是否存在预约
+                    String appointment = redisService.get(String.valueOf(timestampInSeconds));
+                    
+                    // 如果该时间段没有预约，将时间戳添加到列表中
+                    if (appointment == null) {
+                        appointmentTime.add((int)timestampInSeconds);
+                    }
+                    
+                    // 增加15分钟
+                    start = start.plusMinutes(15);
+                }
+                itemMap.put("appointmentTime", appointmentTime);
                 itemWithDoctors.add(itemMap);
             }
             return new Result(ResultCode.R_Ok, itemWithDoctors);
@@ -256,17 +295,47 @@ public class UserServiceImpl implements UserService {
     @Override
     public Result appointentItem(Appointment appointment) {
         try {
+            User queryUser = userRepository.findByUserId(ThreadLocalUtil.getUserId());
+            if(queryUser == null){
+                return new Result(ResultCode.R_UserNotFound);
+            }
+            if(queryUser.getUserBreach() >= 3){
+                return new Result(ResultCode.R_Error, "违约次数过多，无法预约");
+            }
+            // 获取预约时间
+            Timestamp appointmentTime = appointment.getAppointmentTime();
+            if (appointmentTime == null) {
+                return new Result(ResultCode.R_ParamError);
+            }
+            
+            // 将时间戳转换为秒级时间戳作为Redis的key
+            long timestampInSeconds = appointmentTime.getTime() / 1000;
+            String redisKey = String.valueOf(timestampInSeconds);
+            
+            // 检查该时间段是否已被预约
+            String existingAppointment = redisService.get(redisKey);
+            if (existingAppointment != null) {
+                return new Result(ResultCode.R_Error, "该时间段已被预约");
+            }
+            
+            // 创建新预约
             Appointment newAppointment = new Appointment();
             newAppointment.setAppointmentId(UUID.randomUUID().toString());
             newAppointment.setUserId(ThreadLocalUtil.getUserId());
             newAppointment.setItemId(appointment.getItemId());
             newAppointment.setDoctorId(appointment.getDoctorId());
-            newAppointment.setAppointmentTime(appointment.getAppointmentTime());
+            newAppointment.setAppointmentTime(appointmentTime);
             newAppointment.setResult("");
             newAppointment.setStatus(AppointmentConstantdata.APPOINTMENT_STATUS_NOUPLOAD);
             newAppointment.setCreateTime(new Timestamp(System.currentTimeMillis()));
             newAppointment.setUpdateTime(new Timestamp(System.currentTimeMillis()));
+            
+            // 保存预约到数据库
             appointmentRepository.save(newAppointment);
+            
+            // 将预约时间存入Redis
+            redisService.set(redisKey, newAppointment.getAppointmentId());
+            
             return new Result(ResultCode.R_Ok);
         } catch (Exception e) {
             logUtil.error("预约项目失败", e);
@@ -281,7 +350,7 @@ public class UserServiceImpl implements UserService {
             if (userId == null) {
                 return new Result(ResultCode.R_Fail);
             }
-            List<Appointment> appointmentList = appointmentRepository.findByUserId(userId);
+            List<Appointment> appointmentList = appointmentRepository.findByUserIdOrderByAppointmentTimeDesc(userId);
             List<Map<String, Object>> appointmentWithItems = new ArrayList<>();
             for (Appointment o : appointmentList) {
                 Map<String, Object> appointmentMap = new HashMap<>();
@@ -310,7 +379,7 @@ public class UserServiceImpl implements UserService {
                     appointmentMap.put("item_name", "已删除");
                 }
                 //每条数据插入到数组的最开头
-                appointmentWithItems.add(0, appointmentMap);
+                appointmentWithItems.add(appointmentMap);
             }
             return new Result(ResultCode.R_Ok, appointmentWithItems);
         } catch (Exception e) {
