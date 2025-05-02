@@ -24,10 +24,11 @@ public class ManageController {
     public Result addDoctor(
         @RequestParam(value = "doctor_name", required = true) String doctorName,
         @RequestParam(value = "doctor_avatar", required = true) MultipartFile doctorAvatar,
+        @RequestParam(value = "doctor_schedule", required = true) String doctorSchedule,
         @RequestParam(value = "introduction", required = true) String introduction,
         @RequestParam(value = "working_years", required = true) Integer workingYears
     ){
-        return manageService.addDoctor(doctorName, doctorAvatar, introduction, workingYears);
+        return manageService.addDoctor(doctorName, doctorAvatar, doctorSchedule, introduction, workingYears);
     }
 
     @GetMapping("/getDoctor")
@@ -43,11 +44,12 @@ public class ManageController {
     public Result updateDoctor(
         @RequestParam(value = "doctor_id", required = true) String doctorId,
         @RequestParam(value = "doctor_name", required = false) String doctorName,
+        @RequestParam(value = "doctor_schedule", required = false) String doctorSchedule,
         @RequestParam(value = "doctor_avatar", required = false) MultipartFile doctorAvatar,
         @RequestParam(value = "introduction", required = false) String introduction,
         @RequestParam(value = "working_years", required = false) Integer workingYears
     ){
-        return manageService.updateDoctor(doctorId, doctorName, doctorAvatar, introduction, workingYears);
+        return manageService.updateDoctor(doctorId, doctorName, doctorSchedule, doctorAvatar, introduction, workingYears);
     }
 
     @DeleteMapping("/deleteDoctor")

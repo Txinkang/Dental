@@ -11,11 +11,11 @@ import com.example.dental.model.Item;
 public interface ManageService {
     Result getItem(String itemName, Integer pageNum, Integer pageSize);
 
-    Result addDoctor(String doctorName, MultipartFile doctorAvatar, String introduction, Integer workingYears);
+    Result addDoctor(String doctorName, MultipartFile doctorAvatar, String introduction, String introduction2, Integer workingYears);
 
     Result getDoctor(String doctorName, Integer pageNum, Integer pageSize);
 
-    Result updateDoctor(String doctorId, String doctorName, MultipartFile doctorAvatar, String introduction, Integer workingYears);
+    Result updateDoctor(String doctorId, String doctorName, String doctorSchedule, MultipartFile doctorAvatar, String introduction, Integer workingYears);
 
     Result deleteDoctor(String doctorId);
 

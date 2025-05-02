@@ -69,7 +69,7 @@ public class ManageServiceImpl implements ManageService {
 
     //==================================医生管理==================================
     @Override
-    public Result addDoctor(String doctorName, MultipartFile doctorAvatar, String introduction, Integer workingYears) {
+    public Result addDoctor(String doctorName, MultipartFile doctorAvatar, String doctorSchedule, String introduction, Integer workingYears) {
         try{
             if(doctorName == null || doctorName.isEmpty()){
                 return new Result(ResultCode.R_Error, "医生名称不能为空");
@@ -79,6 +79,9 @@ public class ManageServiceImpl implements ManageService {
             }
             if(introduction == null || introduction.isEmpty()){
                 return new Result(ResultCode.R_Error, "医生简介不能为空");
+            }
+            if(doctorSchedule == null || doctorSchedule.isEmpty()){
+                return new Result(ResultCode.R_Error, "医生排班不能为空");
             }
             if(workingYears == null){
                 return new Result(ResultCode.R_Error, "医生工作年限不能为空");
@@ -90,6 +93,7 @@ public class ManageServiceImpl implements ManageService {
             doctor.setDoctorAvatar(doctorAvatarUrl);
             doctor.setIntroduction(introduction);
             doctor.setWorkingYears(workingYears);
+            doctor.setDoctorSchedule(doctorSchedule);
             doctor.setCreateTime(new Timestamp(System.currentTimeMillis()));
             doctor.setUpdateTime(new Timestamp(System.currentTimeMillis()));
             doctorRepository.save(doctor);
@@ -123,7 +127,7 @@ public class ManageServiceImpl implements ManageService {
     }
 
     @Override
-    public Result updateDoctor(String doctorId, String doctorName, MultipartFile doctorAvatar, String introduction, Integer workingYears) {
+    public Result updateDoctor(String doctorId, String doctorName, String doctorSchedule, MultipartFile doctorAvatar, String introduction, Integer workingYears) {
         try{
             Doctor doctor = doctorRepository.findByDoctorId(doctorId);
             if(doctor == null){
@@ -144,6 +148,9 @@ public class ManageServiceImpl implements ManageService {
             }
             if(workingYears != null){
                 doctor.setWorkingYears(workingYears);
+            }
+            if(doctorSchedule != null && !doctorSchedule.isEmpty()){
+                doctor.setDoctorSchedule(doctorSchedule);
             }
             doctor.setUpdateTime(new Timestamp(System.currentTimeMillis()));
             doctorRepository.save(doctor);

@@ -227,30 +227,10 @@ public class UserServiceImpl implements UserService {
                 itemMap.put("itemName", o.getItemName());
                 itemMap.put("createTime", o.getCreateTime());
                 itemMap.put("updateTime", o.getUpdateTime());
-                String doctorIdsJson = (String) o.getDoctorId();
-                List<Map<String, Object>> doctorList = new ArrayList<>();
-                if (!Strings.isEmpty(doctorIdsJson)) {
-                    String[] doctorIdsArray = new ObjectMapper().readValue(doctorIdsJson, String[].class);
-                    for(String doctorId : doctorIdsArray){
-                        Doctor d = doctorRepository.findByDoctorId(doctorId);
-                        if (d != null) {
-                            Map<String, Object> doctorMap = new HashMap<>();
-                            doctorMap.put("doctorId", d.getDoctorId());
-                            doctorMap.put("doctorName", d.getDoctorName());
-                            doctorList.add(doctorMap);
-                        } else {
-                            Map<String, Object> doctorMap = new HashMap<>();
-                            doctorMap.put("doctorId", "");
-                            doctorMap.put("doctorName", "");
-                            doctorList.add(doctorMap);
-                        }
-                    }
-                }
-                itemMap.put("doctor", doctorList);
+
                 // 获取当前时间
                 LocalDateTime now = LocalDateTime.now();
                 LocalDateTime today1745 = now.withHour(17).withMinute(45).withSecond(0).withNano(0);
-
                 // 确定是使用今天还是明天的日期
                 LocalDateTime targetDate;
                 if (now.isAfter(today1745)) {
@@ -260,6 +240,28 @@ public class UserServiceImpl implements UserService {
                     // 否则使用今天的日期
                     targetDate = now;
                 }
+
+                String doctorIdsJson = (String) o.getDoctorId();
+                List<Map<String, Object>> doctorList = new ArrayList<>();
+                if (!Strings.isEmpty(doctorIdsJson)) {
+                    String[] doctorIdsArray = new ObjectMapper().readValue(doctorIdsJson, String[].class);
+                    for(String doctorId : doctorIdsArray){
+                        Doctor d = doctorRepository.findByDoctorId(doctorId);
+                        // Get day of week (1-7, where 1 is Monday)
+                        int dayOfWeek = targetDate.getDayOfWeek().getValue();
+                        String dayOfWeekStr = String.valueOf(dayOfWeek);
+                        
+                        // Check if doctor's schedule includes this day
+                        String doctorSchedule = d.getDoctorSchedule();
+                        if (d != null && doctorSchedule.contains(dayOfWeekStr)) {
+                            Map<String, Object> doctorMap = new HashMap<>();
+                            doctorMap.put("doctorId", d.getDoctorId());
+                            doctorMap.put("doctorName", d.getDoctorName());
+                            doctorList.add(doctorMap);
+                        }
+                    }
+                }
+                itemMap.put("doctor", doctorList);
 
                 // 设置目标日期的起始和结束时间
                 LocalDateTime start = targetDate.withHour(8).withMinute(0).withSecond(0).withNano(0);
@@ -272,11 +274,14 @@ public class UserServiceImpl implements UserService {
                     long timestampInSeconds = start.atZone(ZoneId.systemDefault()).toEpochSecond();
                     
                     // 检查Redis中是否存在预约
-                    String appointment = redisService.get(String.valueOf(timestampInSeconds));
+                    String redisKey = o.getItemId()+timestampInSeconds;
+                    String appointment = redisService.get(redisKey);
                     
                     // 如果该时间段没有预约，将时间戳添加到列表中
                     if (appointment == null) {
                         appointmentTime.add((int)timestampInSeconds);
+                    }else {
+                        logUtil.info("有预约："+redisKey);
                     }
                     
                     // 增加15分钟
@@ -310,7 +315,7 @@ public class UserServiceImpl implements UserService {
             
             // 将时间戳转换为秒级时间戳作为Redis的key
             long timestampInSeconds = appointmentTime.getTime() / 1000;
-            String redisKey = String.valueOf(timestampInSeconds);
+            String redisKey = appointment.getItemId()+timestampInSeconds;
             
             // 检查该时间段是否已被预约
             String existingAppointment = redisService.get(redisKey);
@@ -401,7 +406,9 @@ public class UserServiceImpl implements UserService {
             }
             //取消预约
             appointmentRepository.delete(appointment);
-            return new Result(ResultCode.R_Ok);
+            String redisKey =  appointment.getItemId()+(appointment.getAppointmentTime().getTime()/1000);
+            boolean deleteAppointment = redisService.delete(redisKey);
+            return new Result(deleteAppointment ? ResultCode.R_Ok : ResultCode.R_Fail);
         } catch (Exception e) {
             logUtil.error("取消预约项目失败", e);
             return new Result(ResultCode.R_UpdateDbFailed);

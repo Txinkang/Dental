@@ -14,6 +14,9 @@ public class Doctor {
     @Column(name = "doctor_name")
     private String doctorName;
     @Basic
+    @Column(name = "doctor_schedule")
+    private String doctorSchedule;
+    @Basic
     @Column(name = "doctor_avatar")
     private String doctorAvatar;
     @Basic
@@ -43,6 +46,14 @@ public class Doctor {
 
     public void setDoctorName(String doctorName) {
         this.doctorName = doctorName;
+    }
+
+    public String getDoctorSchedule() {
+        return doctorSchedule;
+    }
+
+    public void setDoctorSchedule(String doctorSchedule) {
+        this.doctorSchedule = doctorSchedule;
     }
 
     public String getDoctorAvatar() {
