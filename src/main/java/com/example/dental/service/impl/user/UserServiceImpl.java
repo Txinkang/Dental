@@ -312,6 +312,15 @@ public class UserServiceImpl implements UserService {
             if (appointmentTime == null) {
                 return new Result(ResultCode.R_ParamError);
             }
+            // 检查用户在该时间段是否已有预约
+            List<Appointment> existingAppointments = appointmentRepository.findByUserId(ThreadLocalUtil.getUserId());
+            
+            // 检查是否有重叠的预约时间
+            for (Appointment existingAppointment : existingAppointments) {
+                if (existingAppointment.getAppointmentTime().equals(appointmentTime)) {
+                    return new Result(ResultCode.R_Error, "您在该时间段已有预约，请选择其他时间");
+                }
+            }
             
             // 将时间戳转换为秒级时间戳作为Redis的key
             long timestampInSeconds = appointmentTime.getTime() / 1000;
