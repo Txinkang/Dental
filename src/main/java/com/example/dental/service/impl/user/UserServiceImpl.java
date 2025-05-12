@@ -263,31 +263,6 @@ public class UserServiceImpl implements UserService {
                 }
                 itemMap.put("doctor", doctorList);
 
-                // 设置目标日期的起始和结束时间
-                LocalDateTime start = targetDate.withHour(8).withMinute(0).withSecond(0).withNano(0);
-                LocalDateTime end = targetDate.withHour(17).withMinute(45).withSecond(0).withNano(0);
-
-                // 生成8:00到17:45之间每15分钟的时间戳
-                List<Integer> appointmentTime = new ArrayList<>();
-                while (!start.isAfter(end)) {
-                    // 转换为秒级时间戳
-                    long timestampInSeconds = start.atZone(ZoneId.systemDefault()).toEpochSecond();
-                    
-                    // 检查Redis中是否存在预约
-                    String redisKey = o.getItemId()+timestampInSeconds;
-                    String appointment = redisService.get(redisKey);
-                    
-                    // 如果该时间段没有预约，将时间戳添加到列表中
-                    if (appointment == null) {
-                        appointmentTime.add((int)timestampInSeconds);
-                    }else {
-                        logUtil.info("有预约："+redisKey);
-                    }
-                    
-                    // 增加15分钟
-                    start = start.plusMinutes(15);
-                }
-                itemMap.put("appointmentTime", appointmentTime);
                 itemWithDoctors.add(itemMap);
             }
             return new Result(ResultCode.R_Ok, itemWithDoctors);
@@ -324,7 +299,7 @@ public class UserServiceImpl implements UserService {
             
             // 将时间戳转换为秒级时间戳作为Redis的key
             long timestampInSeconds = appointmentTime.getTime() / 1000;
-            String redisKey = appointment.getItemId()+timestampInSeconds;
+            String redisKey = appointment.getItemId()+appointment.getDoctorId()+timestampInSeconds;
             
             // 检查该时间段是否已被预约
             String existingAppointment = redisService.get(redisKey);
@@ -415,7 +390,7 @@ public class UserServiceImpl implements UserService {
             }
             //取消预约
             appointmentRepository.delete(appointment);
-            String redisKey =  appointment.getItemId()+(appointment.getAppointmentTime().getTime()/1000);
+            String redisKey =  appointment.getItemId()+appointment.getDoctorId()+(appointment.getAppointmentTime().getTime()/1000);
             boolean deleteAppointment = redisService.delete(redisKey);
             return new Result(deleteAppointment ? ResultCode.R_Ok : ResultCode.R_Fail);
         } catch (Exception e) {
